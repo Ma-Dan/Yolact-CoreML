@@ -15,7 +15,42 @@ let labels = [
     "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"
 ]
 
-let anchors: [[Float]] = [[81,82,  135,169,  344,319], [10,14,  23,27,  37,58]]
+func makePriors() -> [[Float]] {
+    let convs = [69, 35, 18, 9, 5]
+    let aspect_ratios = [1, 0.5, 2]
+    let scale = [24, 48, 96, 192, 384]
+    let max_size = 550
+    
+    var priors: [[Float]] = []
+    
+    for k in 0..<5 {
+        for j in 0..<convs[k] {
+            for i in 0..<convs[k] {
+                let x = (Float(i) + 0.5) / Float(convs[k])
+                let y = (Float(j) + 0.5) / Float(convs[k])
+                for h in 0..<3 {
+                    let size = Float(scale[k]) * sqrtf(Float(aspect_ratios[h])) / Float(max_size)
+                    priors.append([x, y, size, size])
+                }
+            }
+        }
+    }
+    
+    return priors
+}
+
+func argmax(scores: [Float]) -> Int {
+    precondition(scores.count > 0)
+    var maxIndex = 0
+    var maxValue = scores[0]
+    for i in 1..<scores.count {
+        if scores[i] > maxValue {
+            maxValue = scores[i]
+            maxIndex = i
+        }
+    }
+    return maxIndex
+}
 
 /**
   Removes bounding boxes that overlap too much with other boxes that have

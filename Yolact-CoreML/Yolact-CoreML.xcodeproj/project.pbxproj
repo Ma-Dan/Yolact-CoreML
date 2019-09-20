@@ -14,6 +14,7 @@
 		372CB262209C9B0F00F501E3 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 372CB261209C9B0F00F501E3 /* AppDelegate.swift */; };
 		372CB265209C9B2600F501E3 /* BoundingBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 372CB263209C9B2600F501E3 /* BoundingBox.swift */; };
 		372CB266209C9B2600F501E3 /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 372CB264209C9B2600F501E3 /* Helpers.swift */; };
+		3769D5842335274000F8EBE9 /* dog550.png in Resources */ = {isa = PBXBuildFile; fileRef = 3769D5832335274000F8EBE9 /* dog550.png */; };
 		7BA1C6D01EF27DA000BB25EF /* VideoCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BC25FB51EF27C0D002ECBBA /* VideoCapture.swift */; };
 		7BA1C6D21EF2827800BB25EF /* UIImage+CVPixelBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BA1C6D11EF2827500BB25EF /* UIImage+CVPixelBuffer.swift */; };
 		7BA1C6D81EF2871600BB25EF /* Yolact.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BA1C6D71EF2871600BB25EF /* Yolact.swift */; };
@@ -31,6 +32,7 @@
 		372CB261209C9B0F00F501E3 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		372CB263209C9B2600F501E3 /* BoundingBox.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BoundingBox.swift; sourceTree = "<group>"; };
 		372CB264209C9B2600F501E3 /* Helpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
+		3769D5832335274000F8EBE9 /* dog550.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = dog550.png; sourceTree = "<group>"; };
 		7BA1C6D11EF2827500BB25EF /* UIImage+CVPixelBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+CVPixelBuffer.swift"; sourceTree = "<group>"; };
 		7BA1C6D71EF2871600BB25EF /* Yolact.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Yolact.swift; sourceTree = "<group>"; };
 		7BA1C6D91EF2B30200BB25EF /* CVPixelBuffer+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CVPixelBuffer+Helpers.swift"; sourceTree = "<group>"; };
@@ -72,6 +74,7 @@
 		7BC25FA01EF1B7D1002ECBBA /* Yolact-CoreML */ = {
 			isa = PBXGroup;
 			children = (
+				3769D5832335274000F8EBE9 /* dog550.png */,
 				370F094322B499D5006B5570 /* yolact.mlmodel */,
 				372CB263209C9B2600F501E3 /* BoundingBox.swift */,
 				372CB264209C9B2600F501E3 /* Helpers.swift */,
@@ -151,6 +154,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7BC25FA91EF1B7D1002ECBBA /* Assets.xcassets in Resources */,
+				3769D5842335274000F8EBE9 /* dog550.png in Resources */,
 				7BC25FA71EF1B7D1002ECBBA /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

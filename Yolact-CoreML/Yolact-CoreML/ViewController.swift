@@ -124,18 +124,55 @@ class ViewController: UIViewController {
   }
 
   // MARK: - Doing inference
+    func preprocess(image: CVPixelBuffer) -> MLMultiArray? {
+        guard let array = try? MLMultiArray(shape: [3, 550, 550], dataType: .float32) else {
+            return nil
+        }
+        
+        let dst = UnsafeMutablePointer<Float>(OpaquePointer(array.dataPointer))
+        
+        CVPixelBufferLockBaseAddress(image, .readOnly)
+        let baseAddress = CVPixelBufferGetBaseAddress(image)
+        
+        let width = CVPixelBufferGetWidth(image)
+        let height = CVPixelBufferGetHeight(image)
+        
+        let bytesPerRow = CVPixelBufferGetBytesPerRow(image)
+        let buffer = baseAddress!.assumingMemoryBound(to: UInt8.self)
+        
+        for y in 0..<height {
+            let yindex = y*bytesPerRow
+            for x in 0..<width {
+                let xindex = x*4
+                let r = (Float(buffer[yindex+xindex+1]) / 255.0 - 0.5) * 2
+                let g = (Float(buffer[yindex+xindex+2]) / 255.0 - 0.5) * 2
+                let b = (Float(buffer[yindex+xindex+3]) / 255.0 - 0.5) * 2
+                
+                dst[x+y*550] = r
+                dst[x+y*550+550*550] = g
+                dst[x+y*550+550*550*2] = b
+            }
+        }
+        
+        CVPixelBufferUnlockBaseAddress(image, .readOnly)
 
-  func predict(image: UIImage) {
-    if let pixelBuffer = image.pixelBuffer(width: Yolact.inputWidth, height: Yolact.inputHeight) {
-      predict(pixelBuffer: pixelBuffer)
+        return array
     }
-  }
+
+    func predict(image: UIImage) {
+        if let pixelBuffer = image.pixelBuffer(width: Yolact.inputWidth, height: Yolact.inputHeight) {
+            guard let input = preprocess(image: pixelBuffer) else { return }
+            if let boundingBoxes = try? yolact.predict(image: input) {
+                showOnMainThread(boundingBoxes, 0)
+            }
+        }
+    }
 
   func predict(pixelBuffer: CVPixelBuffer) {
     // Measure how long it takes to predict a single video frame.
     let startTime = CACurrentMediaTime()
 
-    // Resize the input with Core Image to 416x416.
+    // Resize the input with Core Image to 550x550.
     guard let resizedPixelBuffer = resizedPixelBuffer else { return }
     let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
     let sx = CGFloat(Yolact.inputWidth) / CGFloat(CVPixelBufferGetWidth(pixelBuffer))
@@ -143,14 +180,16 @@ class ViewController: UIViewController {
     let scaleTransform = CGAffineTransform(scaleX: sx, y: sy)
     let scaledImage = ciImage.transformed(by: scaleTransform)
     ciContext.render(scaledImage, to: resizedPixelBuffer)
+    
+    guard let input = preprocess(image: resizedPixelBuffer) else { return }
 
     // This is an alternative way to resize the image (using vImage):
     //if let resizedPixelBuffer = resizePixelBuffer(pixelBuffer,
     //                                              width: Yolact.inputWidth,
     //                                              height: Yolact.inputHeight)
 
-    // Resize the input to 416x416 and give it to our model.
-    if let boundingBoxes = try? yolact.predict(image: resizedPixelBuffer) {
+    // Resize the input to 550x550 and give it to our model.
+    if let boundingBoxes = try? yolact.predict(image: input) {
       let elapsed = CACurrentMediaTime() - startTime
       showOnMainThread(boundingBoxes, elapsed)
     }
@@ -171,7 +210,7 @@ class ViewController: UIViewController {
     if let observations = request.results as? [VNCoreMLFeatureValueObservation],
        let features = observations.first?.featureValue.multiArrayValue {
 
-        let boundingBoxes = yolact.computeBoundingBoxes(features: [features, features, features])
+        let boundingBoxes = yolact.computeMasks(features: [features, features, features])
       let elapsed = CACurrentMediaTime() - startTimes.remove(at: 0)
       showOnMainThread(boundingBoxes, elapsed)
     }
@@ -210,15 +249,10 @@ class ViewController: UIViewController {
       if i < predictions.count {
         let prediction = predictions[i]
 
-        // The predicted bounding box is in the coordinate space of the input
-        // image, which is a square image of 416x416 pixels. We want to show it
-        // on the video preview, which is as wide as the screen and has a 4:3
-        // aspect ratio. The video preview also may be letterboxed at the top
-        // and bottom.
         let width = view.bounds.width
         let height = width * 4 / 3
-        let scaleX = width / CGFloat(Yolact.inputWidth)
-        let scaleY = height / CGFloat(Yolact.inputHeight)
+        let scaleX = width
+        let scaleY = height
         let top = (view.bounds.height - height) / 2
 
         // Translate and scale the rectangle to our own coordinate system.
@@ -243,7 +277,7 @@ class ViewController: UIViewController {
 extension ViewController: VideoCaptureDelegate {
   func videoCapture(_ capture: VideoCapture, didCaptureVideoFrame pixelBuffer: CVPixelBuffer?, timestamp: CMTime) {
     // For debugging.
-    //predict(image: UIImage(named: "dog416")!); return
+    //predict(image: UIImage(named: "dog550")!); return
 
     semaphore.wait()
 
