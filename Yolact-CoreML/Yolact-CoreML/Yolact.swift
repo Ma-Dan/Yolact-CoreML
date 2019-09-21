@@ -11,7 +11,7 @@ class Yolact {
     let classes = UInt(80)
 
     // Tweak these values to get more or fewer predictions.
-    let confidenceThreshold: Float = 0.2
+    let confidenceThreshold: Float = 0.5
     let iouThreshold: Float = 0.5
     
     let priors = makePriors()
