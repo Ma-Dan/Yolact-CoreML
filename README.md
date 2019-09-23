@@ -7,6 +7,8 @@ An example of [You Only Look At CoefficienTs](https://github.com/dbolya/yolact) 
 
 [Yolact](https://github.com/dbolya/yolact) [(https://github.com/dbolya/yolact)](https://github.com/dbolya/yolact) is a simple, fully convolutional model for real-time instance segmentation. [https://arxiv.org/abs/1904.02689](https://arxiv.org/abs/1904.02689)
 
+![Yolact](yolact.png)
+
 ## Code references
 - UI code: [YOLO-CoreML-MPSNNGraph](https://github.com/hollance/YOLO-CoreML-MPSNNGraph) [(https://github.com/hollance/YOLO-CoreML-MPSNNGraph)](https://github.com/hollance/YOLO-CoreML-MPSNNGraph)
 
@@ -36,5 +38,4 @@ How to convert pytorch model to CoreML model:
 
 ## Todo
 
-1. Calculate mask from proto & mask output (matmul proto(138x138x32) with mask(32) to get 138x138 mask), upsample to screen resolution, crop with bounding box and display.
-2. Simply model to get more performance on mobile devices.
+1. Simply model to get more performance on mobile devices.
