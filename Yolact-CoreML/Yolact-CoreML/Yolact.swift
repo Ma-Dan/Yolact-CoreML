@@ -17,14 +17,35 @@ class Yolact {
     let priors = makePriors()
 
     struct Prediction {
+        let index: Int
         let classIndex: Int
         let score: Float
         let rect: CGRect
+        let box: [Float]
+        var mask: UIImage
     }
+    
+    public struct PixelData {
+        var a: UInt8
+        var r: UInt8
+        var g: UInt8
+        var b: UInt8
+    }
+    
+    var colors: [PixelData] = []
 
     let model = yolact()
 
-    public init() { }
+    public init() {
+        for r: CGFloat in [0.2, 0.4, 0.6, 0.8, 1.0] {
+          for g: CGFloat in [0.3, 0.7, 0.6, 0.8] {
+            for b: CGFloat in [0.4, 0.8, 0.6, 1.0] {
+                let color = PixelData(a: UInt8(255*0.8), r: UInt8(255*r), g: UInt8(255*g), b: UInt8(255*b))
+              colors.append(color)
+            }
+          }
+        }
+    }
 
     public func predict(image: MLMultiArray) throws -> [Prediction] {
         if let output = try? model.prediction(_0: image) {
@@ -54,6 +75,80 @@ class Yolact {
         
         return boxes
     }
+    
+    func imageFromARGB32Bitmap(pixels: [PixelData], width: Int, height: Int) -> UIImage? {
+        guard width > 0 && height > 0 else { return nil }
+        guard pixels.count == width * height else { return nil }
+
+        let rgbColorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedFirst.rawValue)
+        let bitsPerComponent = 8
+        let bitsPerPixel = 32
+
+        var data = pixels // Copy to mutable []
+        guard let providerRef = CGDataProvider(data: NSData(bytes: &data,
+                                length: data.count * MemoryLayout<PixelData>.size)
+            )
+            else { return nil }
+
+        guard let cgim = CGImage(
+            width: width,
+            height: height,
+            bitsPerComponent: bitsPerComponent,
+            bitsPerPixel: bitsPerPixel,
+            bytesPerRow: width * MemoryLayout<PixelData>.size,
+            space: rgbColorSpace,
+            bitmapInfo: bitmapInfo,
+            provider: providerRef,
+            decode: nil,
+            shouldInterpolate: true,
+            intent: .defaultIntent
+            )
+            else { return nil }
+
+        return UIImage(cgImage: cgim)
+    }
+    
+    public func calcMask(proto: UnsafeMutablePointer<Float>, mask: UnsafeMutablePointer<Float>, index:Int, color: PixelData, box: [Float]) -> [PixelData] {
+        var pixels = [PixelData]()
+        
+        for _ in 0..<138*138 {
+            pixels.append(PixelData(a: 0, r: 0, g: 0, b: 0))
+        }
+        
+        for y in 0..<138 {
+            for x in 0..<138 {
+                var sum: Float = 0
+                for i in 0..<32 {
+                    sum += proto[(y*138+x)*32+i] * mask[index*32+i]
+                }
+                sum = sigmoid(sum)
+                
+                if sum > 0.5 {
+                    pixels[y*138+x] = color
+                }
+            }
+        }
+        
+        let left = Int(138 * box[0])
+        let top = Int(138 * box[1])
+        let right = Int(138 * box[2])
+        let bottom = Int(138 * box[3])
+        
+        for y in 0..<138 {
+            for x in 0..<138 {
+                if y < top || y > bottom {
+                    pixels[y*138+x] = PixelData(a: 0, r: 0, g: 0, b: 0)
+                    continue
+                }
+                if x < left || x > right {
+                    pixels[y*138+x] = PixelData(a: 0, r: 0, g: 0, b: 0)
+                }
+            }
+        }
+        
+        return pixels
+    }
 
     public func computeMasks(features: [MLMultiArray]) -> [Prediction] {
         var predictions = [Prediction]()
@@ -74,8 +169,6 @@ class Yolact {
         
             conf = conf.advanced(by: 81)
         }
-        
-        print(keep.count)
 
         var loc_keep: [[Float]] = []
         var priors_keep: [[Float]] = []
@@ -93,7 +186,7 @@ class Yolact {
             conf_keep.append(conf_one)
         }
     
-        var boxes = decode(locs: loc_keep, priors: priors_keep)
+        let boxes = decode(locs: loc_keep, priors: priors_keep)
         
         for i in 0..<boxes.count {
             let rect = CGRect(x: CGFloat(boxes[i][0]), y: CGFloat(boxes[i][1]),
@@ -101,13 +194,25 @@ class Yolact {
             
             let classIndex = argmax(scores: conf_keep[i])
 
-            let prediction = Prediction(classIndex: classIndex,
+            let prediction = Prediction(index: keep[i],
+                                        classIndex: classIndex,
                                         score: conf_keep[i][classIndex],
-                                        rect: rect)
+                                        rect: rect,
+                                        box: boxes[i],
+                                        mask: UIImage())
             predictions.append(prediction)
         }
         
         predictions = nonMaxSuppression(boxes: predictions, limit: Yolact.maxBoundingBoxes, threshold: iouThreshold)
+        
+        //Calculate mask
+        let proto = UnsafeMutablePointer<Float>(OpaquePointer(features[0].dataPointer))
+        let mask = UnsafeMutablePointer<Float>(OpaquePointer(features[2].dataPointer))
+        
+        for i in 0..<predictions.count {
+            let pixelData = calcMask(proto: proto, mask: mask, index: predictions[i].index, color: colors[predictions[i].classIndex], box: predictions[i].box)
+            predictions[i].mask = imageFromARGB32Bitmap(pixels: pixelData, width: 138, height: 138) ?? UIImage()
+        }
 
         return predictions
     }

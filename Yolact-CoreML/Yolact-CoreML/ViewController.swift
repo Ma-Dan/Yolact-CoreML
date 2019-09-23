@@ -266,7 +266,7 @@ class ViewController: UIViewController {
         // Show the bounding box.
         let label = String(format: "%@ %.1f", labels[prediction.classIndex], prediction.score * 100)
         let color = colors[prediction.classIndex]
-        boundingBoxes[i].show(frame: rect, label: label, color: color)
+        boundingBoxes[i].show(frame: rect, label: label, color: color, mask: prediction.mask, top: top, width: width, height: height)
       } else {
         boundingBoxes[i].hide()
       }
